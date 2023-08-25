@@ -191,13 +191,20 @@ class Blockchain {
      * Remember the star should be returned decoded.
      * @param {*} address 
      */
-    getStarsByWalletAddress (address) {
+    getStarsByWalletAddress(address) {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-            
+            self.chain.forEach(async block => {
+                const data = await block.getBData();
+                if (data && data.address === address) {
+                    stars.push(data);
+                }
+            });
+            resolve(stars);
         });
     }
+    
 
     /**
      * This method will return a Promise that will resolve with the list of errors when validating the chain.
