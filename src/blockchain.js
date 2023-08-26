@@ -65,7 +65,7 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
             try {
-                // Check if the chain is empty (Genesis block case)
+                // Check if the chain is empty (Genesis block only) if not empty
                 if (self.chain.length === 0) {
                     block.height = 0;
                     block.time = new Date().getTime().toString().slice(0, -3);
@@ -74,7 +74,7 @@ class Blockchain {
                     self.height = 0;
                     resolve(block);
                 } else {
-                    // Get the previous block
+                    // Get the previous block in chain
                     const previousBlock = self.chain[self.chain.length - 1];
                     // Set the height and previousBlockHash of the new block
                     block.height = previousBlock.height + 1;
@@ -128,20 +128,21 @@ class Blockchain {
     submitStar(address, message, signature, star) {
         let self = this;
         return new Promise(async (resolve, reject) => {
+            //each part of teh message is separated by ":" then we use Date to get teh current date and time which is teh 2nd variable
             const timeInMessage = parseInt(message.split(':')[1]);
             const currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-
+            // I think because thsi is a promise it can calculate teh time continuously whilst waiting ot be called
             if (currentTime - timeInMessage > 300) {
-                reject("Time elapsed is more than 5 minutes");
+                reject("5 miutes have passed");
                 return;
             }
-
+            //if signature and address are consistent returns true (simplified explanation)
             const isValid = bitcoinMessage.verify(message, address, signature);
             if (!isValid) {
-                reject("Invalid message signature");
+                reject("Error detected with signature");
                 return;
             }
-
+            // since it is validated we get a new block created with all parameters into the chain
             const newBlock = new BlockClass.Block({ address, message, signature, star });
             await self._addBlock(newBlock);
 
@@ -158,6 +159,7 @@ class Blockchain {
     getBlockByHash(hash) {
         let self = this;
         return new Promise((resolve, reject) => {
+            //we find block by hash using find() with arrow function pointing hash parameter
             const block = self.chain.find(block => block.hash === hash);
             
             if (block) {
@@ -176,7 +178,8 @@ class Blockchain {
     getBlockByHeight(height) {
         let self = this;
         return new Promise((resolve, reject) => {
-            let block = self.chain.filter(p => p.height === height)[0];
+            //we find blocks simply by find() by height with arrow function
+            const block = self.chain.find(block=> block.height === height);
             if(block){
                 resolve(block);
             } else {
@@ -196,7 +199,9 @@ class Blockchain {
         let stars = [];
         return new Promise((resolve, reject) => {
             self.chain.forEach(async block => {
+                //getBData() method in block.js returns body of block decoded
                 const data = await block.getBData();
+                //We check if data has been returned and whether address matches the Legacy address from Bitcoin
                 if (data && data.address === address) {
                     stars.push(data);
                 }
@@ -218,6 +223,8 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             for (let i = 0; i < self.chain.length; i++) {
                 const currentBlock = self.chain[i];
+
+                //validating blocks
                 const isValid = await currentBlock.validate();
 
                 if (!isValid) {
@@ -225,6 +232,7 @@ class Blockchain {
                 }
 
                 if (i > 0) {
+                    //Block checks whether previousBlockHash has same hash
                     const previousBlock = self.chain[i - 1];
                     if (currentBlock.previousBlockHash !== previousBlock.hash) {
                         errorLog.push(`Chain error between block at height ${currentBlock.height} and ${previousBlock.height}.`);

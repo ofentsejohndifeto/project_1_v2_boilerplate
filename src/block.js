@@ -40,7 +40,8 @@ class Block {
         return new Promise((resolve, reject) => {
             const currentHash = self.hash; // Save the current block hash
             
-            // Recalculate the hash of the Block using its data
+            // ...self object returns all values of self, and hash:null makes teh hash equal to null
+            //this reverts the block back to its original data before the hash is added to properly calculate the hash
             const blockString  = JSON.stringify({ ...self, hash: null });
             const recalculatedHash = SHA256(blockString).toString();
             
@@ -73,7 +74,7 @@ class Block {
             // Parsing the decoded data to retrieve the JavaScript Object
             const blockObject = JSON.parse(decodedData);
     
-            // Check if the block is the Genesis block
+            // Check if the block is the Genesis block else return decoded data in block body
             if (self.height === 0) {
                 reject(new Error("Genesis block doesn't contain data."));
             } else {
