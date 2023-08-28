@@ -85,13 +85,22 @@ class Blockchain {
                     // Add the block to the chain
                     self.chain.push(block);
                     self.height = block.height;
-                    resolve(block);
+    
+                    // Validate the chain after adding the new block? validate chain returns errors so we execute the method
+                    const validationErrors = await self.validateChain();
+                    if (validationErrors.length === 0) {
+                        resolve(block);
+                        console.log("Chain is validated")
+                    } else {
+                        reject(new Error("Chain validation failed."));
+                    }
                 }
             } catch (error) {
                 reject(error);
             }
         });
-    }    
+    }
+        
 
     /**
      * The requestMessageOwnershipVerification(address) method
@@ -179,7 +188,7 @@ class Blockchain {
         let self = this;
         return new Promise((resolve, reject) => {
             //we find blocks simply by find() by height with arrow function
-            const block = self.chain.find(block=> block.height === height);
+            const block = self.chain.find(block => block.height === height);
             if(block){
                 resolve(block);
             } else {
@@ -221,25 +230,17 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
+            //we go through each block with for loop
             for (let i = 0; i < self.chain.length; i++) {
-                const currentBlock = self.chain[i];
+                const block = self.chain[i];
 
-                //validating blocks
-                const isValid = await currentBlock.validate();
-
-                if (!isValid) {
-                    errorLog.push(`Block ${currentBlock.height} is not valid.`);
-                }
-
-                if (i > 0) {
-                    //Block checks whether previousBlockHash has same hash
-                    const previousBlock = self.chain[i - 1];
-                    if (currentBlock.previousBlockHash !== previousBlock.hash) {
-                        errorLog.push(`Chain error between block at height ${currentBlock.height} and ${previousBlock.height}.`);
-                    }
+                //validating blocks with method in Block.js
+                const isValid = await block.validate();
+                //push error to errorLog array
+                if (isValid === false) {
+                    errorLog.push(`Block ${block.height} is not valid.`);
                 }
             }
-
             resolve(errorLog);
         });
     }
